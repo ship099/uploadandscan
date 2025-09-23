@@ -24,12 +24,25 @@ core.info(`Runner OS is: ${runnerOS}`);
   core.info(`Latest version of Veracode Java wrapper: ${latestVersion}`);
 
   // download the Veracode Java wrapper
-  const wgetCommand = `wget ${javaWrapperDownloadUrl}/${latestVersion}/vosp-api-wrappers-java-${latestVersion}.jar`;
-  try {
-    await execPromise(wgetCommand);
-  } catch (error) {
-    core.info(`Error executing wget command: ${error.message}`);
+  if(runnerOS == 'Windows'){
+    const outFileName = `vosp-api-wrappers-java-${latestVersion}.jar`
+    const jarUrl = `${javaWrapperDownloadUrl}/${latestVersion}/vosp-api-wrappers-java-${latestVersion}.jar`
+    const powershellCommand = `Invoke-WebRequest -Uri "${jarUrl}" -OutFile "${outFileName}"`
+    try {
+      await execPromise(powershellCommand);
+    } catch (error) {
+      core.info(`Error executing powershell command: ${error.message}`);
+    }
+
+  }else{
+    const wgetCommand = `wget ${javaWrapperDownloadUrl}/${latestVersion}/vosp-api-wrappers-java-${latestVersion}.jar`;
+    try {
+      await execPromise(wgetCommand);
+    } catch (error) {
+      core.info(`Error executing wget command: ${error.message}`);
+    }
   }
+  
   core.info(`Veracode Java wrapper downloaded: vosp-api-wrappers-java-${latestVersion}.jar`);
   return `vosp-api-wrappers-java-${latestVersion}.jar`;
 }
