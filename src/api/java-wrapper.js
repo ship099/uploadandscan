@@ -27,7 +27,7 @@ core.info(`Runner OS is: ${runnerOS}`);
   if(runnerOS == 'Windows'){
     const outFileName = `vosp-api-wrappers-java-${latestVersion}.jar`
     const jarUrl = `${javaWrapperDownloadUrl}/${latestVersion}/vosp-api-wrappers-java-${latestVersion}.jar`
-    const powershellCommand = `Invoke-WebRequest -Uri "${jarUrl}" -OutFile "${outFileName}"`
+    const powershellCommand = `powershell.exe Invoke-WebRequest -Uri "${jarUrl}" -OutFile "${outFileName}"`
     try {
       await execPromise(powershellCommand);
     } catch (error) {
