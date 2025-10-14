@@ -3,6 +3,8 @@ const appConfig = require('../app-cofig.js');
 const { getVeracodeApplicationForPolicyScan, getVeracodeSandboxIDFromProfile, createSandboxRequest, getVeracodeApplicationScanStatus, getVeracodeApplicationFindings
 } = require('./application-service.js');
 const { downloadJar } = require('../api/java-wrapper.js');
+const fs = require('fs');
+const util = require('util');
 
 async function executeStaticScans(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl, sandboxname, version, filepath){
     core.debug(`Getting Veracode Application for Policy Scan: ${appname}`)
