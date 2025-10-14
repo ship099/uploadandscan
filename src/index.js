@@ -5,6 +5,7 @@ const { downloadJar } = require('./api/java-wrapper.js');
 const { createSandboxBuild, createBuild, uploadFile, beginPreScan, checkPrescanSuccess, getModules, beginScan, checkScanSuccess
 } = require('./services/scan-service.js');
 const appConfig = require('./app-cofig.js');
+const { executeStaticScans } = require('./services/workflow-service.js')
 
 const vid = core.getInput('vid', { required: true });
 const vkey = core.getInput('vkey', { required: true });
@@ -21,6 +22,7 @@ const failbuild = core.getInput('failbuild', { required: false });
 const createsandbox = core.getInput('createsandbox', { required: false });
 const sandboxname = core.getInput('sandboxname', { required: false });
 const gitRepositoryUrl = core.getInput('gitRepositoryUrl', { required: false });
+const workflowApp = core.getInput('workflowApp', {required: false});
 
 const POLICY_EVALUATION_FAILED = 9;
 const SCAN_TIME_OUT = 8;
@@ -55,6 +57,10 @@ async function run() {
   if (!checkParameters())
     return;
 
+  if(workflowApp){
+    await executeStaticScans(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl, sandboxname, version, filepath);
+  }
+ 
   core.debug(`Getting Veracode Application for Policy Scan: ${appname}`)
   const veracodeApp = await getVeracodeApplicationForPolicyScan(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl);
   if (veracodeApp.appId === -1) {
