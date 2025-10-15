@@ -6,7 +6,8 @@ const { downloadJar } = require('../api/java-wrapper.js');
 const fs = require('fs');
 const util = require('util');
 const { exec, execFileSync } = require('child_process');
-async function executeStaticScans(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl, sandboxname, version, filepath){
+
+async function executeStaticScans(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl, sandboxname, version, filepath) {
     core.debug(`Getting Veracode Application for Policy Scan: ${appname}`)
     const veracodeApp = await getVeracodeApplicationForPolicyScan(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl);
   if (veracodeApp.appId === -1) {
@@ -88,7 +89,7 @@ async function executeStaticScans(vid, vkey, appname, policy, teams, createprofi
 
 }
 
-async function executePolicyScan(vid, vkey,veracodeApp, jarName, version, filepath){
+async function executePolicyScan(vid, vkey,veracodeApp, jarName, version, filepath) {
 
     let policyScanCommand = `java -jar ${jarName} -action UploadAndScanByAppId -vid ${vid} -vkey ${vkey} -appid ${veracodeApp.appId} -filepath ${filepath} -version ${version} -scanpollinginterval 30 -autoscan true -scanallnonfataltoplevelmodules true -includenewmodules true -scantimeout 6000 -deleteincompletescan 2`;
     let scan_id  = '';
@@ -155,11 +156,11 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  export function extractValue(source,prefix, terminator){
+ function extractValue(source,prefix, terminator){
     let start = source.search(prefix);
     let sub1 = source.substring(start + prefix.length);
     let end = sub1.search(terminator);
     return sub1.substring(0, end);
 }
  
-  module.exports = { executeStaticScans }
+module.exports = {executeStaticScans};

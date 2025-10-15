@@ -5,8 +5,8 @@ const { downloadJar } = require('./api/java-wrapper.js');
 const { createSandboxBuild, createBuild, uploadFile, beginPreScan, checkPrescanSuccess, getModules, beginScan, checkScanSuccess
 } = require('./services/scan-service.js');
 const appConfig = require('./app-cofig.js');
-const { executeStaticScans } = require('./services/workflow-service.js')
 const { exec, execFileSync } = require('child_process');
+const { executeStaticScans } = require('./services/workflow-service.js');
 
 const vid = core.getInput('vid', { required: true });
 const vkey = core.getInput('vkey', { required: true });
