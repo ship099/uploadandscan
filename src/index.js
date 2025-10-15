@@ -60,8 +60,9 @@ async function run() {
 
   if(workflowApp){
     await executeStaticScans(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl, sandboxname, version, filepath);
-
+    return responseCode
   }
+
  
   core.debug(`Getting Veracode Application for Policy Scan: ${appname}`)
   const veracodeApp = await getVeracodeApplicationForPolicyScan(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl);

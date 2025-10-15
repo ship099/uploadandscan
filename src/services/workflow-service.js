@@ -6,6 +6,7 @@ const { downloadJar } = require('../api/java-wrapper.js');
 const fs = require('fs');
 const util = require('util');
 const { exec, execFileSync } = require('child_process');
+const axios = require('axios');
 
 async function executeStaticScans(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl, sandboxname, version, filepath) {
     core.debug(`Getting Veracode Application for Policy Scan: ${appname}`)
@@ -95,7 +96,6 @@ async function executePolicyScan(vid, vkey,veracodeApp, jarName, version, filepa
     let scan_id  = '';
     let sandboxID;
   let sandboxGUID;
-    const mylaunchDate = new Date();
     try {
        core.info(`Command to execute the policy scan : ${policyScanCommand}`);
         const output = execFileSync("java", ['-jar', `${jarName}`, '-action', 'UploadAndScanByAppId', '-vid', `${vid}`, '-vkey', `${vkey}`, '-appid', `${veracodeApp.appId}`, '-filepath', `${filepath}`, '-version', `${version}`, '-scanpollinginterval', '30', '-autoscan', 'true', '-scanallnonfataltoplevelmodules', 'true', '-includenewmodules', 'true', '-scantimeout', '6000', '-deleteincompletescan', '2']);
@@ -108,12 +108,59 @@ async function executePolicyScan(vid, vkey,veracodeApp, jarName, version, filepa
     }
 
     core.info('Waiting for Scan Results...');
-  let moduleSelectionStartTime = new Date();
-  let moduleSelectionCount = 0;
+    const output = await checkPolicyScanStatus(vid,vkey,veracodeApp,scan_id)
+    
+  await getVeracodeApplicationFindings(vid, vkey, veracodeApp, buildId, sandboxID, sandboxGUID);
+  return responseCode;
+}
+
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+ function extractValue(source,prefix, terminator){
+    let start = source.search(prefix);
+    let sub1 = source.substring(start + prefix.length);
+    let end = sub1.search(terminator);
+    return sub1.substring(0, end);
+}
+async function getPolicyScanStatus(veracodeApiId, veracodeApiSecret, appGuid, buildId) {
+  let resource = {
+      resourceUri: `${appConfig().applicationUri}/${appGuid}`,
+      queryAttribute: '',
+      queryValue: ''
+  };
+  const response = await getResourceByAttribute(veracodeApiId, veracodeApiSecret, resource);
+  const scans = response.scans;
+  for (let i = 0; i < scans.length; i++) {
+      const scanUrl = scans[i].scan_url;
+      const scanId = scanUrl.split(':')[3];
+      if (scanId === buildId) {
+          console.log(`Scan Status of buildId ${buildId} is : ${scans[i].status}`);
+          return {
+              'status': scans[i].status,
+              'passFail': response.profile.policies[0].policy_compliance_status,
+              'scanUpdateDate': scans[i].modified_date,
+              'lastPolicyScanData': response.last_policy_compliance_check_date
+          };
+      }
+  }
+  return {
+      'status': 'not found',
+      'passFail': 'not found'
+  };
+}
+
+async function checkPolicyScanStatus(vid,vkey,veracodeApp, scan_id) {
+  let endTime = new Date(new Date().getTime() + config.api.veracode.scanStatusApiTimeout);
+    let responseCode = 0;
+    let moduleSelectionCount = 0;
+    let moduleSelectionStartTime = new Date();
   while (true) {
     await sleep(appConfig().pollingInterval);
     core.info('Checking Scan Results...');
-    const statusUpdate = await getVeracodeApplicationScanStatus(vid, vkey, veracodeApp, version, sandboxID, sandboxGUID, jarName, mylaunchDate);
+    const statusUpdate = await getPolicyScanStatus(vid, vkey, veracodeApp.appGuid, scan_id);
     core.info(`Scan Status: ${JSON.stringify(statusUpdate)}`);
     if (statusUpdate.status === 'MODULE_SELECTION_REQUIRED' || statusUpdate.status === 'PRE-SCAN_SUCCESS') {
       moduleSelectionCount++;
@@ -149,18 +196,38 @@ async function executePolicyScan(vid, vkey,veracodeApp, jarName, version, filepa
       return responseCode;
     }
   }
-  await getVeracodeApplicationFindings(vid, vkey, veracodeApp, buildId, sandboxID, sandboxGUID);
+  responseCode = FINISHED;
   return responseCode;
 }
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
 
- function extractValue(source,prefix, terminator){
-    let start = source.search(prefix);
-    let sub1 = source.substring(start + prefix.length);
-    let end = sub1.search(terminator);
-    return sub1.substring(0, end);
+
+async function getResourceByAttribute(veracodeApiId, veracodeApiSecret, resource){
+  const resourceUri = resource.resourceUri;
+  const queryAttribute = resource.queryAttribute1;
+  const queryValue = resource.queryValue1;
+  const queryAttribute2 = resource.queryAttribute2;
+  const queryValue2 = resource.queryValue2;
+  var urlQueryParams = queryAttribute !== '' ? `?${queryAttribute}=${queryValue}` : '';
+  if (queryAttribute2) {
+      urlQueryParams = urlQueryParams + `&${queryAttribute2}=${queryValue2}`;
+  }
+  let host = appConfig().us;
+  if (veracodeApiId.startsWith('vera01ei-')) {
+      host = appConfig().eu;
+      veracodeApiId = veracodeApiId.split('-')[1] || '';
+      veracodeApiSecret = veracodeApiSecret.split('-')[1] || '';
+  }
+  const headers = {
+      'Authorization': calculateAuthorizationHeader(veracodeApiId, veracodeApiSecret, host, resourceUri, urlQueryParams, 'GET')
+  };
+  const appUrl = `https://${host}${resourceUri}${urlQueryParams}`;
+  try {
+      const response = await axios.get(appUrl, { headers });
+      return response.data;
+  } catch (error) {
+      console.log(`error while calling api with resource : ${JSON.stringify(resource)}: ${error}`);
+  }
 }
+
  
 module.exports = {executeStaticScans};
