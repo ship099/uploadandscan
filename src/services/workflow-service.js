@@ -5,7 +5,7 @@ const { getVeracodeApplicationForPolicyScan, getVeracodeSandboxIDFromProfile, cr
 const { downloadJar } = require('../api/java-wrapper.js');
 const fs = require('fs');
 const util = require('util');
-
+const { exec, execFileSync } = require('child_process');
 async function executeStaticScans(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl, sandboxname, version, filepath){
     core.debug(`Getting Veracode Application for Policy Scan: ${appname}`)
     const veracodeApp = await getVeracodeApplicationForPolicyScan(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl);
@@ -154,5 +154,12 @@ async function executePolicyScan(vid, vkey,veracodeApp, jarName, version, filepa
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
+
+  export function extractValue(source,prefix, terminator){
+    let start = source.search(prefix);
+    let sub1 = source.substring(start + prefix.length);
+    let end = sub1.search(terminator);
+    return sub1.substring(0, end);
+}
  
   module.exports = { executeStaticScans }
