@@ -6,7 +6,7 @@ const { createSandboxBuild, createBuild, uploadFile, beginPreScan, checkPrescanS
 } = require('./services/scan-service.js');
 const appConfig = require('./app-cofig.js');
 const { exec, execFileSync } = require('child_process');
-const { executeStaticScans } = require('./services/workflow-service.js');
+
 
 const vid = core.getInput('vid', { required: true });
 const vkey = core.getInput('vkey', { required: true });
@@ -58,12 +58,6 @@ async function run() {
   if (!checkParameters())
     return;
 
-  if(workflowApp){
-    await executeStaticScans(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl, sandboxname, version, filepath);
-    return responseCode
-  }
-
- 
   core.debug(`Getting Veracode Application for Policy Scan: ${appname}`)
   const veracodeApp = await getVeracodeApplicationForPolicyScan(vid, vkey, appname, policy, teams, createprofile, gitRepositoryUrl);
   if (veracodeApp.appId === -1) {
